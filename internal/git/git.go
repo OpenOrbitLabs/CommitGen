@@ -105,3 +105,72 @@ func Branch() string {
 	}
 	return s
 }
+
+// StageAll stages every change in the working tree (git add -A).
+func StageAll() error {
+	_, err := run("add", "-A")
+	return err
+}
+
+// StagedFiles lists staged paths. Renames are reported as a delete plus an
+// add so each side can be committed on its own.
+func StagedFiles() ([]string, error) {
+	out, err := run("diff", "--cached", "--name-only", "--no-renames", "-z")
+	if err != nil {
+		return nil, err
+	}
+	var files []string
+	for _, f := range strings.Split(out, "\x00") {
+		if f != "" {
+			files = append(files, f)
+		}
+	}
+	return files, nil
+}
+
+// WriteTree saves the current index as a tree object and returns its id.
+func WriteTree() (string, error) {
+	s, err := run("write-tree")
+	return strings.TrimSpace(s), err
+}
+
+// ResetIndex makes the index match HEAD (or empty, before the first commit).
+// The working tree is not touched.
+func ResetIndex() error {
+	if _, err := run("rev-parse", "--verify", "-q", "HEAD"); err != nil {
+		_, err = run("read-tree", "--empty")
+		return err
+	}
+	_, err := run("read-tree", "HEAD")
+	return err
+}
+
+// RestoreIndex sets the index back to a tree saved with WriteTree.
+func RestoreIndex(tree string) error {
+	_, err := run("read-tree", tree)
+	return err
+}
+
+// StageFromTree stages path exactly as it is in tree (or stages its removal
+// if tree doesn't contain it).
+func StageFromTree(tree, path string) error {
+	out, err := run("ls-tree", "-r", "-z", "--full-tree", tree, "--", path)
+	if err != nil {
+		return err
+	}
+	entry := strings.TrimRight(out, "\x00")
+	if entry == "" {
+		_, err = run("update-index", "--force-remove", "--", path)
+		return err
+	}
+	meta, _, _ := strings.Cut(entry, "\t") // "<mode> <type> <sha>"
+	parts := strings.Fields(meta)
+	if len(parts) != 3 {
+		return fmt.Errorf("unexpected ls-tree output for %s", path)
+	}
+	_, err = run("update-index", "--add", "--cacheinfo", parts[0]+","+parts[2]+","+path)
+	return err
+}
+
+// RefreshIndex updates cached file stats after index rewrites.
+func RefreshIndex() { run("update-index", "-q", "--refresh") }
