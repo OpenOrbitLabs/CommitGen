@@ -1,0 +1,135 @@
+package prompt
+
+import (
+	"fmt"
+	"regexp"
+	"strings"
+)
+
+type Input struct {
+	Diff         string
+	Stat         string
+	Branch       string
+	History      []string
+	Style        string
+	Language     string
+	Scopes       []string
+	Instructions string
+	Hint         string 
+	MaxDiff      int
+}
+
+func System(in Input) string {
+	var b strings.Builder
+	b.WriteString("You are an expert software engineer who writes precise git commit messages.\n\nRules:\n")
+	if in.Style == "simple" {
+		b.WriteString("- First line: a concise summary in imperative mood (\"Add\", \"Fix\", not \"Added\"), max 72 characters, no trailing period.\n")
+	} else {
+		b.WriteString("- Use Conventional Commits. First line: <type>(<optional scope>): <summary>\n")
+		b.WriteString("- Allowed types: feat, fix, refactor, perf, docs, test, build, ci, chore, style, revert.\n")
+		b.WriteString("- Summary in imperative mood, lowercase start, max 72 characters total, no trailing period.\n")
+		if len(in.Scopes) > 0 {
+			fmt.Fprintf(&b, "- Scope, if used, must be one of: %s.\n", strings.Join(in.Scopes, ", "))
+		}
+	}
+	b.WriteString("- If the change is non-trivial, add a body after one blank line: short bullet points (\"- \") explaining WHAT changed and WHY. Wrap at 72 characters.\n")
+	b.WriteString("- Do not describe every file. Focus on intent. Never invent changes that are not in the diff.\n")
+	b.WriteString("- Output ONLY the commit message text. No code fences, no quotes, no preamble.\n")
+	if in.Language != "" && !strings.EqualFold(in.Language, "english") {
+		fmt.Fprintf(&b, "- Write the message in %s (keep the type keyword in English).\n", in.Language)
+	}
+	if in.Instructions != "" {
+		fmt.Fprintf(&b, "- %s\n", in.Instructions)
+	}
+	return b.String()
+}
+
+func User(in Input) string {
+	var b strings.Builder
+	if in.Hint != "" {
+		fmt.Fprintf(&b, "Context from the author: %s\n\n", in.Hint)
+	}
+	if in.Branch != "" {
+		fmt.Fprintf(&b, "Branch: %s\n\n", in.Branch)
+	}
+	if len(in.History) > 0 {
+		b.WriteString("Recent commit subjects in this repo (match their style):\n")
+		for _, h := range in.History {
+			fmt.Fprintf(&b, "  %s\n", h)
+		}
+		b.WriteString("\n")
+	}
+	if in.Stat != "" {
+		fmt.Fprintf(&b, "Files changed:\n%s\n", in.Stat)
+	}
+	diff := in.Diff
+	if in.MaxDiff > 0 && len(diff) > in.MaxDiff {
+		diff = Truncate(diff, in.MaxDiff)
+	}
+	fmt.Fprintf(&b, "Staged diff:\n%s\n", diff)
+	return b.String()
+}
+
+func Truncate(diff string, max int) string {
+	files := strings.Split(diff, "\ndiff --git ")
+	if len(files) == 0 {
+		return diff
+	}
+	for i := 1; i < len(files); i++ {
+		files[i] = "diff --git " + files[i]
+	}
+	per := max / len(files)
+	if per < 400 {
+		per = 400
+	}
+	var b strings.Builder
+	for _, f := range files {
+		if b.Len() >= max {
+			line, _, _ := strings.Cut(f, "\n")
+			b.WriteString(line + "\n[... hunks omitted ...]\n")
+			continue
+		}
+		if len(f) > per {
+			cut := strings.LastIndex(f[:per], "\n")
+			if cut < 0 {
+				cut = per
+			}
+			b.WriteString(f[:cut] + "\n[... truncated ...]\n")
+		} else {
+			b.WriteString(f)
+			if !strings.HasSuffix(f, "\n") {
+				b.WriteString("\n")
+			}
+		}
+	}
+	return b.String()
+}
+
+var (
+	fenceRe  = regexp.MustCompile("(?s)^```[a-zA-Z]*\\n(.*?)\\n?```$")
+	thinkRe  = regexp.MustCompile(`(?s)<think>.*?</think>`)
+	prefixRe = regexp.MustCompile(`(?i)^(here('s| is) (the|a|your) commit message:?|commit message:)\s*`)
+)
+
+func Clean(s string) string {
+	s = thinkRe.ReplaceAllString(s, "")
+	s = strings.TrimSpace(s)
+	s = prefixRe.ReplaceAllString(s, "")
+	s = strings.TrimSpace(s)
+	if m := fenceRe.FindStringSubmatch(s); m != nil {
+		s = m[1]
+	}
+	s = strings.TrimSpace(s)
+	if len(s) >= 2 && (s[0] == '"' && s[len(s)-1] == '"' || s[0] == '\'' && s[len(s)-1] == '\'') {
+		s = s[1 : len(s)-1]
+	}
+	lines := strings.Split(strings.ReplaceAll(s, "\r\n", "\n"), "\n")
+	for i, l := range lines {
+		lines[i] = strings.TrimRight(l, " \t")
+	}
+	s = strings.TrimSpace(strings.Join(lines, "\n"))
+	if subj, body, ok := strings.Cut(s, "\n"); ok && !strings.HasPrefix(body, "\n") {
+		s = subj + "\n\n" + strings.TrimLeft(body, "\n")
+	}
+	return s
+}
