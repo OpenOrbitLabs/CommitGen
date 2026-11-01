@@ -52,6 +52,7 @@ You commit many times a day, so writing good messages shouldn't slow you down or
 | 🧠 **Smart diffs** | Skips lockfiles, minified files, and build output. Big diffs are trimmed while keeping every file header. |
 | 🎯 **Style matching** | Learns from your recent commits and branch name to match your repo's conventions. |
 | 🪝 **Git hook** | `commitgen hook install`, then plain `git commit` opens with a drafted message. |
+| 📦 **One commit per file** | `commitgen -a --each` commits every changed file separately, each with its own message. |
 | 🎲 **Multiple candidates** | `-n 3` generates three options to pick from. |
 | ⚙️ **Configurable** | Global config plus per-repo `.commitgen.toml` for scopes, style, language, and custom rules. |
 
@@ -120,6 +121,8 @@ commitgen version
 | `-c` | Generate, then open `git commit` in your editor to review |
 | `-y` | With `-c`: commit immediately without opening the editor |
 | `-p` | Print the message only (for scripts and aliases) |
+| `-a` | Stage all changes first (like `git add -A`) |
+| `--each` | Commit every staged file separately, each with its own message (no prompts) |
 | `-n <num>` | Generate several candidates and pick one |
 | `-m "<text>"` | Give the model extra context, e.g. `-m "closes #42"` |
 | `--dry-run` | Show exactly what would be sent to the model, then exit |
@@ -131,6 +134,16 @@ commitgen version
 | `--max <chars>` | Max diff characters sent to the model |
 | `--no-redact` | Disable secret masking |
 | `-v` | Verbose output |
+
+### One commit per file
+
+```bash
+commitgen -a --each        # stage everything, then commit file by file
+commitgen --each           # only the files you already staged
+commitgen -a --each -p     # preview the messages without committing
+```
+
+commitgen commits exactly what you staged, including partially staged files. Unstaged changes are left alone. If a step fails, it stops and leaves the remaining files staged.
 
 **Tip:** add a git alias:
 
