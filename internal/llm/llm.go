@@ -1,5 +1,3 @@
-// Package llm talks to OpenAI-compatible APIs (OpenAI, Ollama, Groq,
-// LM Studio, llama.cpp, OpenRouter, ...) and the Anthropic Messages API.
 package llm
 
 import (
@@ -22,7 +20,6 @@ type Request struct {
 	MaxTokens   int
 }
 
-// OnToken receives streamed text as it arrives. May be nil.
 type OnToken func(string)
 
 type Provider interface {
@@ -34,10 +31,9 @@ type Options struct {
 	BaseURL  string
 	APIKey   string
 	Timeout  time.Duration
-	NumCtx   int // Ollama context window (tokens)
+	NumCtx   int 
 }
 
-// IsOllama reports whether base looks like a local Ollama server.
 func IsOllama(base string) bool { return strings.Contains(base, ":11434") }
 
 func New(o Options) (Provider, error) {
@@ -46,8 +42,6 @@ func New(o Options) (Provider, error) {
 	case "ollama":
 		return newOllama(o, client), nil
 	case "", "openai", "openai-compatible":
-		// Ollama's OpenAI-compatible endpoint ignores the context size and
-		// silently truncates long prompts, so use its native API instead.
 		if IsOllama(o.BaseURL) {
 			return newOllama(o, client), nil
 		}
@@ -85,8 +79,6 @@ func connError(err error, base string) error {
 	return fmt.Errorf("request to %s failed: %w", base, err)
 }
 
-// ---------------- OpenAI-compatible ----------------
-
 type openAI struct {
 	base, key string
 	http      *http.Client
@@ -117,7 +109,6 @@ func (p *openAI) Generate(ctx context.Context, r Request, on OnToken) (string, e
 		return "", httpError(resp, p.base)
 	}
 
-	// Some servers ignore stream=true and return plain JSON; handle both.
 	if !strings.Contains(resp.Header.Get("Content-Type"), "event-stream") {
 		var out struct {
 			Choices []struct {
@@ -154,8 +145,6 @@ func (p *openAI) Generate(ctx context.Context, r Request, on OnToken) (string, e
 	})
 	return full.String(), err
 }
-
-// ---------------- Ollama (native API) ----------------
 
 type ollama struct {
 	base   string
@@ -204,7 +193,6 @@ func (p *ollama) Generate(ctx context.Context, r Request, on OnToken) (string, e
 	if resp.StatusCode != 200 {
 		return "", httpError(resp, p.base)
 	}
-	// Streaming response: one JSON object per line.
 	var full strings.Builder
 	sc := bufio.NewScanner(resp.Body)
 	sc.Buffer(make([]byte, 64*1024), 1024*1024)
@@ -230,8 +218,6 @@ func (p *ollama) Generate(ctx context.Context, r Request, on OnToken) (string, e
 	}
 	return full.String(), sc.Err()
 }
-
-// ---------------- Anthropic ----------------
 
 type anthropic struct {
 	base, key string
@@ -297,7 +283,6 @@ func (p *anthropic) Generate(ctx context.Context, r Request, on OnToken) (string
 	return full.String(), err
 }
 
-// readSSE calls fn with the payload of every `data:` line until fn returns false.
 func readSSE(r io.Reader, fn func(string) bool) error {
 	sc := bufio.NewScanner(r)
 	sc.Buffer(make([]byte, 64*1024), 1024*1024)
