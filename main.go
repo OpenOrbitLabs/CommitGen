@@ -1,5 +1,3 @@
-// commitgen — generate git commit messages from your staged diff with a
-// local or API-based LLM.
 package main
 
 import (
@@ -24,12 +22,13 @@ import (
 	"github.com/onetwothird/commitgen/internal/redact"
 )
 
-var version = "dev" // set with -ldflags "-X main.version=v1.0.0"
+var version = "dev" 
 
 const usage = `commitgen — write commit messages from your staged diff
 
 Usage:
   commitgen [flags]            generate a message for the staged changes
+  commitgen -a --each          commit every changed file separately, automatically
   commitgen hook install       draft messages automatically on ` + "`git commit`" + `
   commitgen hook uninstall
   commitgen config init        write a starter config file
@@ -41,6 +40,7 @@ Flags:
 
 type flags struct {
 	commit, yes, print, dryRun, noRedact, verbose bool
+	each, all                                     bool
 	n                                             int
 	hint, model, url, provider, style, lang, hook string
 	maxDiff                                       int
@@ -81,6 +81,8 @@ func main() {
 	fs.StringVar(&f.style, "style", "", "conventional | simple (overrides config)")
 	fs.StringVar(&f.lang, "lang", "", "language of the message (overrides config)")
 	fs.IntVar(&f.maxDiff, "max", 0, "max diff characters sent to the model (overrides config)")
+	fs.BoolVar(&f.each, "each", false, "commit every staged file separately, each with its own message (automatic)")
+	fs.BoolVar(&f.all, "a", false, "stage all changes first (like git add -A)")
 	fs.StringVar(&f.hook, "hook", "", "internal: write message into this file (used by the git hook)")
 	fs.Parse(args)
 
@@ -125,36 +127,102 @@ func loadConfig(f flags) (config.Config, string, error) {
 	return c, root, nil
 }
 
-func generateCmd(f flags) error {
-	cfg, _, err := loadConfig(f)
-	if err != nil {
-		return err
-	}
+type session struct {
+	cfg config.Config
+	f   flags
+	p   llm.Provider
+	ctx context.Context
+}
 
-	diff, err := git.StagedDiff(cfg.Exclude)
+func (s *session) request() (llm.Request, string, error) {
+	diff, err := git.StagedDiff(s.cfg.Exclude)
 	if err != nil {
-		if f.hook != "" && errors.Is(err, git.ErrNothingStaged) {
-			return nil // let git handle the empty commit itself
-		}
-		return err
+		return llm.Request{}, "", err
 	}
 	stat, _ := git.StagedStat()
-	if !f.noRedact {
+	if !s.f.noRedact {
 		var n int
 		diff, n = redact.Secrets(diff)
 		if n > 0 {
 			fmt.Fprintf(os.Stderr, "commitgen: masked %d possible secret(s) before sending\n", n)
 		}
 	}
-
 	in := prompt.Input{
-		Diff: diff, Stat: stat, Branch: git.Branch(), History: git.RecentSubjects(cfg.History),
-		Style: cfg.Style, Language: cfg.Language, Scopes: cfg.Scopes,
-		Instructions: cfg.Instructions, Hint: f.hint, MaxDiff: cfg.MaxDiff,
+		Diff: diff, Stat: stat, Branch: git.Branch(), History: git.RecentSubjects(s.cfg.History),
+		Style: s.cfg.Style, Language: s.cfg.Language, Scopes: s.cfg.Scopes,
+		Instructions: s.cfg.Instructions, Hint: s.f.hint, MaxDiff: s.cfg.MaxDiff,
 	}
-	req := llm.Request{
+	if s.f.verbose {
+		fmt.Fprintf(os.Stderr, "commitgen: %s @ %s (%d diff chars)\n", s.cfg.Model, s.cfg.BaseURL, len(diff))
+	}
+	return llm.Request{
 		System: prompt.System(in), User: prompt.User(in),
-		Model: cfg.Model, Temperature: cfg.Temperature, MaxTokens: 400,
+		Model: s.cfg.Model, Temperature: s.cfg.Temperature, MaxTokens: 400,
+	}, stat, nil
+}
+
+func (s *session) generate(req llm.Request, stat string, n int) ([]string, error) {
+	msgs, err := generateN(s.ctx, s.p, req, n)
+	if err != nil {
+		return nil, err
+	}
+	for i, m := range msgs {
+		if prompt.Valid(m, s.cfg.Style) {
+			continue
+		}
+		if s.f.verbose {
+			fmt.Fprintf(os.Stderr, "commitgen: model reply was not a commit message, asking it to rewrite:\n%s\n", m)
+		}
+		fix := req
+		fix.User = prompt.RepairUser(m, stat, s.cfg.Style)
+		if fixed, err := generateN(s.ctx, s.p, fix, 1); err == nil && prompt.Valid(fixed[0], s.cfg.Style) {
+			msgs[i] = fixed[0]
+		} else {
+			fmt.Fprintln(os.Stderr, "commitgen: warning: the model's reply doesn't look like a commit message.\n"+
+				"  Tips: stage fewer files at a time, add context with -m \"...\", or try a larger model (--model).")
+		}
+	}
+	return msgs, nil
+}
+
+func newSession(f flags) (*session, context.CancelFunc, error) {
+	cfg, _, err := loadConfig(f)
+	if err != nil {
+		return nil, nil, err
+	}
+	p, err := llm.New(llm.Options{
+		Provider: cfg.Provider, BaseURL: cfg.BaseURL, APIKey: cfg.APIKey,
+		Timeout: time.Duration(cfg.Timeout) * time.Second, NumCtx: cfg.NumCtx,
+	})
+	if err != nil {
+		return nil, nil, err
+	}
+	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
+	return &session{cfg: cfg, f: f, p: p, ctx: ctx}, cancel, nil
+}
+
+func generateCmd(f flags) error {
+	if f.all {
+		if err := git.StageAll(); err != nil {
+			return err
+		}
+	}
+	s, cancel, err := newSession(f)
+	if err != nil {
+		return err
+	}
+	defer cancel()
+	if f.each {
+		return eachCmd(s)
+	}
+	cfg := s.cfg
+
+	req, stat, err := s.request()
+	if err != nil {
+		if f.hook != "" && errors.Is(err, git.ErrNothingStaged) {
+			return nil 
+		}
+		return err
 	}
 
 	if f.dryRun {
@@ -163,52 +231,13 @@ func generateCmd(f flags) error {
 		return nil
 	}
 
-	p, err := llm.New(llm.Options{
-		Provider: cfg.Provider, BaseURL: cfg.BaseURL, APIKey: cfg.APIKey,
-		Timeout: time.Duration(cfg.Timeout) * time.Second, NumCtx: cfg.NumCtx,
-	})
-	if err != nil {
-		return err
-	}
-	if f.verbose {
-		fmt.Fprintf(os.Stderr, "commitgen: %s @ %s (%d diff chars)\n", cfg.Model, cfg.BaseURL, len(diff))
-	}
+	gen := func(n int) ([]string, error) { return s.generate(req, stat, n) }
 
-	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
-	defer cancel()
-
-	gen := func(n int) ([]string, error) {
-		msgs, err := generateN(ctx, p, req, n)
-		if err != nil {
-			return nil, err
-		}
-		// Small models sometimes describe the diff instead of writing a
-		// commit message. Detect that and ask for a rewrite once.
-		for i, m := range msgs {
-			if prompt.Valid(m, cfg.Style) {
-				continue
-			}
-			if f.verbose {
-				fmt.Fprintf(os.Stderr, "commitgen: model reply was not a commit message, asking it to rewrite:\n%s\n", m)
-			}
-			fix := req
-			fix.User = prompt.RepairUser(m, stat, cfg.Style)
-			if fixed, err := generateN(ctx, p, fix, 1); err == nil && prompt.Valid(fixed[0], cfg.Style) {
-				msgs[i] = fixed[0]
-			} else {
-				fmt.Fprintln(os.Stderr, "commitgen: warning: the model's reply doesn't look like a commit message.\n"+
-					"  Tips: stage fewer files at a time, add context with -m \"...\", or try a larger model (--model).")
-			}
-		}
-		return msgs, nil
-	}
-
-	// Git hook mode: write the draft into the commit message file.
 	if f.hook != "" {
 		msgs, err := gen(1)
 		if err != nil {
 			fmt.Fprintln(os.Stderr, "commitgen: skipped —", err)
-			return nil // never block a commit
+			return nil
 		}
 		existing, _ := os.ReadFile(f.hook)
 		return os.WriteFile(f.hook, []byte(msgs[0]+"\n"+string(existing)), 0o644)
@@ -250,8 +279,6 @@ func generateCmd(f flags) error {
 	}
 }
 
-// generateN runs n generations concurrently (slightly higher temperature for
-// variety when n > 1) with a spinner on stderr.
 func generateN(ctx context.Context, p llm.Provider, req llm.Request, n int) ([]string, error) {
 	if n > 1 && req.Temperature < 0.7 {
 		req.Temperature = 0.7
@@ -304,7 +331,6 @@ func commit(msg string, edit bool) error {
 	}
 	cmd := exec.Command("git", args...)
 	cmd.Stdin, cmd.Stdout, cmd.Stderr = os.Stdin, os.Stdout, os.Stderr
-	// Stop our own hook from regenerating on top of this message.
 	cmd.Env = append(os.Environ(), "COMMITGEN_SKIP_HOOK=1")
 	return cmd.Run()
 }
@@ -366,8 +392,6 @@ func spinner(label string) func() {
 	return func() { close(done); wg.Wait() }
 }
 
-// ---------------- hook ----------------
-
 const hookMarker = "# installed by commitgen"
 
 const hookScript = `#!/bin/sh
@@ -424,8 +448,6 @@ func hookCmd(args []string) error {
 	return fmt.Errorf("unknown hook command %q", args[0])
 }
 
-// ---------------- config ----------------
-
 func configCmd(args []string) error {
 	sub := "show"
 	if len(args) > 0 {
@@ -462,4 +484,79 @@ func configCmd(args []string) error {
 		return fmt.Errorf("unknown config command %q", sub)
 	}
 	return nil
+}
+
+func eachCmd(s *session) error {
+	if root, err := git.RepoRoot(); err == nil {
+		os.Chdir(root)
+	}
+	files, err := git.StagedFiles()
+	if err != nil {
+		return err
+	}
+	if len(files) == 0 {
+		return git.ErrNothingStaged
+	}
+	snapshot, err := git.WriteTree()
+	if err != nil {
+		return err
+	}
+	restore := func() {
+		git.RestoreIndex(snapshot)
+		git.RefreshIndex()
+	}
+	preview := s.f.dryRun || s.f.print
+	if preview {
+		defer restore()
+	}
+
+	fmt.Fprintf(os.Stderr, "commitgen: %d file(s) staged, committing one by one\n", len(files))
+	done := 0
+	for i, file := range files {
+		if err := git.ResetIndex(); err != nil {
+			restore()
+			return err
+		}
+		if err := git.StageFromTree(snapshot, file); err != nil {
+			restore()
+			return err
+		}
+		req, stat, err := s.request()
+		if err == nil {
+			var msgs []string
+			msgs, err = s.generate(req, stat, 1)
+			if err == nil {
+				fmt.Printf("\n[%d/%d] %s\n%s\n", i+1, len(files), file, indent(msgs[0]))
+				if !preview {
+					err = commitQuiet(msgs[0])
+				}
+			}
+		}
+		if err != nil {
+			restore()
+			return fmt.Errorf("stopped at %s after %d commit(s): %w\n  the remaining files are still staged", file, done, err)
+		}
+		done++
+	}
+	git.RefreshIndex()
+	if preview {
+		fmt.Fprintf(os.Stderr, "\ncommitgen: preview only, nothing was committed\n")
+	} else {
+		fmt.Fprintf(os.Stderr, "\ncommitgen: created %d commit(s)\n", done)
+	}
+	return nil
+}
+
+func commitQuiet(msg string) error {
+	tmp, err := os.CreateTemp("", "commitgen-*.txt")
+	if err != nil {
+		return err
+	}
+	defer os.Remove(tmp.Name())
+	tmp.WriteString(msg + "\n")
+	tmp.Close()
+	cmd := exec.Command("git", "commit", "-q", "-F", tmp.Name())
+	cmd.Stdin, cmd.Stdout, cmd.Stderr = os.Stdin, os.Stdout, os.Stderr
+	cmd.Env = append(os.Environ(), "COMMITGEN_SKIP_HOOK=1")
+	return cmd.Run()
 }
