@@ -1,6 +1,3 @@
-// Package config loads commitgen settings from (lowest to highest priority):
-// built-in defaults, the user config file, a per-repo .commitgen.toml,
-// and environment variables. CLI flags are applied on top by main.
 package config
 
 import (
@@ -13,20 +10,20 @@ import (
 )
 
 type Config struct {
-	Provider     string   // "openai" (any OpenAI-compatible API, incl. Ollama) or "anthropic"
-	BaseURL      string   // e.g. http://localhost:11434/v1
-	Model        string   // e.g. qwen2.5-coder:7b
-	APIKey       string   // read from env or file; never required for local models
-	MaxDiff      int      // max diff characters sent to the model
-	Temperature  float64  // sampling temperature
-	Style        string   // "conventional" or "simple"
-	Language     string   // language of the commit message, e.g. "English"
-	Exclude      []string // extra pathspecs to exclude from the diff
-	Scopes       []string // allowed scopes (optional, per-repo)
-	Instructions string   // extra free-form instructions for the model
-	History      int      // how many recent commit subjects to include for style matching
-	Timeout      int      // HTTP timeout in seconds
-	NumCtx       int      // Ollama context window in tokens
+	Provider     string   
+	BaseURL      string   
+	Model        string   
+	APIKey       string   
+	MaxDiff      int      
+	Temperature  float64  
+	Style        string   
+	Language     string   
+	Exclude      []string 
+	Scopes       []string 
+	Instructions string   
+	History      int      
+	Timeout      int      
+	NumCtx       int      
 }
 
 func Defaults() Config {
@@ -44,7 +41,6 @@ func Defaults() Config {
 	}
 }
 
-// UserConfigPath returns ~/.config/commitgen/config.toml (or the OS equivalent).
 func UserConfigPath() string {
 	if p := os.Getenv("COMMITGEN_CONFIG"); p != "" {
 		return p
@@ -57,7 +53,6 @@ func UserConfigPath() string {
 	return filepath.Join(dir, "commitgen", "config.toml")
 }
 
-// Load builds the effective config. repoRoot may be empty.
 func Load(repoRoot string) (Config, error) {
 	c := Defaults()
 	if err := c.mergeFile(UserConfigPath()); err != nil {
@@ -84,7 +79,6 @@ func (c *Config) mergeEnv() {
 	set("COMMITGEN_API_KEY", &c.APIKey)
 	set("COMMITGEN_STYLE", &c.Style)
 	set("COMMITGEN_LANGUAGE", &c.Language)
-	// Fall back to well-known provider keys.
 	if c.APIKey == "" {
 		switch c.Provider {
 		case "anthropic":
@@ -155,8 +149,6 @@ func (c *Config) apply(key string, v value) error {
 	return err
 }
 
-// ---- minimal TOML subset: `key = "string" | number | true/false | ["a", "b"]` ----
-
 type value struct {
 	raw   string
 	arr   []string
@@ -214,7 +206,7 @@ func parseTOML(f *os.File) (map[string]value, error) {
 		n++
 		line := strings.TrimSpace(stripComment(sc.Text()))
 		if line == "" || strings.HasPrefix(line, "[") && !strings.Contains(line, "=") {
-			continue // blank line or [table] header (ignored, flat keys only)
+			continue 
 		}
 		k, v, ok := strings.Cut(line, "=")
 		if !ok {
