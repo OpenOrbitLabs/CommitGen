@@ -1,6 +1,6 @@
 <div align="center">
 
-# commitgen
+# Commitgen
 
 **AI-written commit messages from your staged diff. Local-first, private, and fast.**
 
