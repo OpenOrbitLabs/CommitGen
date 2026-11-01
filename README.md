@@ -1,9 +1,28 @@
+<div align="center">
+
 # commitgen
 
-Write clean commit messages from your staged diff with a **local** or **API-based** LLM.
-A single binary with no dependencies. Private by default.
+**AI-written commit messages from your staged diff. Local-first, private, and fast.**
 
-```
+[![Go Version](https://img.shields.io/github/go-mod/go-version/onetwothird/commitgen?style=flat-square)](go.mod)
+[![Latest Tag](https://img.shields.io/github/v/tag/onetwothird/commitgen?style=flat-square&label=version)](https://github.com/onetwothird/commitgen/tags)
+[![Go Report Card](https://goreportcard.com/badge/github.com/onetwothird/commitgen?style=flat-square)](https://goreportcard.com/report/github.com/onetwothird/commitgen)
+[![Go Reference](https://pkg.go.dev/badge/github.com/onetwothird/commitgen.svg)](https://pkg.go.dev/github.com/onetwothird/commitgen)
+[![License: MIT](https://img.shields.io/github/license/onetwothird/commitgen?style=flat-square)](LICENSE)
+
+[Features](#features) •
+[Installation](#installation) •
+[Quick Start](#quick-start) •
+[Usage](#usage) •
+[Providers](#providers) •
+[Configuration](#configuration) •
+[FAQ](#faq)
+
+</div>
+
+---
+
+```console
 $ git add .
 $ commitgen
 
@@ -15,94 +34,175 @@ $ commitgen
 [c]ommit  [e]dit  [r]egenerate  [q]uit (c):
 ```
 
+## Why commitgen?
+
+You commit many times a day, so writing good messages shouldn't slow you down or send your code to someone else's server.
+
+- **Private:** it runs against a local model through [Ollama](https://ollama.com) by default. Your code stays on your machine.
+- **Fast:** a single static binary with zero dependencies and no runtime to install.
+- **Your rules:** Conventional Commits, your scopes, your language and your team's style.
+
 ## Features
 
-- **Private by default**: talks to a local [Ollama](https://ollama.com) model out of the box. Your code never leaves your machine.
-- **Any provider**: any OpenAI-compatible API (OpenAI, Groq, OpenRouter, LM Studio, llama.cpp, vLLM), plus Anthropic.
-- **Secret masking**: API keys, tokens, passwords and private keys are redacted before the diff is sent.
-- **Smart diffs**: skips lockfiles, minified files and build output, and truncates big diffs while keeping every file header.
-- **Matches your repo**: reads recent commit subjects and the branch name so messages follow your team's style.
-- **Git hook**: `commitgen hook install`, then plain `git commit` opens with a drafted message.
-- **Multiple candidates**: `-n 3` generates three options and lets you pick one.
-- **Configurable**: user config plus per-repo `.commitgen.toml` (scopes, style, language, custom rules).
+| | |
+|---|---|
+| 🔒 **Local-first** | Works out of the box with Ollama, LM Studio, or llama.cpp. No API key required. |
+| 🔌 **Any provider** | Any OpenAI-compatible API (OpenAI, Groq, OpenRouter, vLLM), plus Anthropic. |
+| 🛡️ **Secret masking** | API keys, tokens, passwords, and private keys are redacted before anything is sent. |
+| 🧠 **Smart diffs** | Skips lockfiles, minified files, and build output. Big diffs are trimmed while keeping every file header. |
+| 🎯 **Style matching** | Learns from your recent commits and branch name to match your repo's conventions. |
+| 🪝 **Git hook** | `commitgen hook install`, then plain `git commit` opens with a drafted message. |
+| 🎲 **Multiple candidates** | `-n 3` generates three options to pick from. |
+| ⚙️ **Configurable** | Global config plus per-repo `.commitgen.toml` for scopes, style, language, and custom rules. |
 
-## Install
+## Installation
+
+### With Go (1.22+)
 
 ```bash
 go install github.com/onetwothird/commitgen@latest
 ```
 
-or build from source:
+### From source
 
 ```bash
-git clone https://github.com/onetwothird/commitgen && cd commitgen
-go build -o commitgen .        # Windows: go build -o commitgen.exe .
+git clone https://github.com/onetwothird/commitgen.git
+cd commitgen
+go build -o commitgen .         # Windows: go build -o commitgen.exe .
 ```
 
-Put the binary somewhere on your `PATH`.
+Move the binary to a directory on your `PATH`.
 
-## Quick start (local, free, private)
+<details>
+<summary><b>Adding commitgen to PATH on Windows</b></summary>
+
+```powershell
+$p = [Environment]::GetEnvironmentVariable("Path", "User")
+[Environment]::SetEnvironmentVariable("Path", "$p;C:\path\to\commitgen", "User")
+```
+
+Restart your terminal afterwards.
+</details>
+
+## Quick Start
+
+**1. Get a local model** (one-time):
 
 ```bash
-ollama pull qwen2.5-coder:7b     # one-time
+ollama pull qwen2.5-coder:7b
+```
+
+**2. Stage your changes and run:**
+
+```bash
 git add -A
-commitgen                         # interactive: commit / edit / regenerate
+commitgen
+```
+
+**3. Optional: let `git commit` do it for you:**
+
+```bash
+commitgen hook install
+git commit          # opens your editor with a drafted message
 ```
 
 ## Usage
 
-```
-commitgen                 generate + interactive menu
-commitgen -c              generate, then open git commit in your editor to review
-commitgen -c -y           generate and commit immediately
-commitgen -p              print only (for scripts / aliases)
-commitgen -n 3            pick from 3 candidates
-commitgen -m "closes #42" give the model extra context
-commitgen --dry-run       show exactly what would be sent to the model
-commitgen --model llama3.2 --url http://localhost:11434/v1
-
-commitgen hook install    draft messages automatically on `git commit`
-commitgen hook uninstall
-commitgen config init     write a starter config file
-commitgen config show     show the effective config
+```text
+commitgen [flags]
+commitgen hook install | uninstall
+commitgen config init | path | show
+commitgen version
 ```
 
-Git alias: `git config --global alias.ai '!commitgen -c'`, then `git ai`.
+| Flag | Description |
+|---|---|
+| `-c` | Generate, then open `git commit` in your editor to review |
+| `-y` | With `-c`: commit immediately without opening the editor |
+| `-p` | Print the message only (for scripts and aliases) |
+| `-n <num>` | Generate several candidates and pick one |
+| `-m "<text>"` | Give the model extra context, e.g. `-m "closes #42"` |
+| `--dry-run` | Show exactly what would be sent to the model, then exit |
+| `--model <name>` | Override the model |
+| `--url <url>` | Override the API base URL |
+| `--provider <name>` | `openai` or `anthropic` |
+| `--style <name>` | `conventional` or `simple` |
+| `--lang <language>` | Language of the message |
+| `--max <chars>` | Max diff characters sent to the model |
+| `--no-redact` | Disable secret masking |
+| `-v` | Verbose output |
 
-## Using a cloud API
+**Tip:** add a git alias:
 
 ```bash
-# OpenAI
+git config --global alias.ai '!commitgen -c'
+git ai
+```
+
+## Providers
+
+commitgen talks to any **OpenAI-compatible** endpoint, plus Anthropic's native API.
+
+| Provider | `base_url` | Example model | API key env var |
+|---|---|---|---|
+| Ollama *(default)* | `http://localhost:11434/v1` | `qwen2.5-coder:7b` | — |
+| LM Studio | `http://localhost:1234/v1` | *(loaded model)* | — |
+| OpenAI | `https://api.openai.com/v1` | `gpt-4o-mini` | `OPENAI_API_KEY` |
+| Groq | `https://api.groq.com/openai/v1` | `llama-3.1-8b-instant` | `COMMITGEN_API_KEY` |
+| OpenRouter | `https://openrouter.ai/api/v1` | `meta-llama/llama-3.1-8b-instruct` | `COMMITGEN_API_KEY` |
+| Anthropic | *(set `provider = "anthropic"`)* | `claude-haiku-4-5` | `ANTHROPIC_API_KEY` |
+
+<details>
+<summary><b>Example: OpenAI</b></summary>
+
+```bash
+# macOS / Linux
 export COMMITGEN_BASE_URL=https://api.openai.com/v1
 export COMMITGEN_MODEL=gpt-4o-mini
 export OPENAI_API_KEY=sk-...
+```
 
-# Groq (fast and cheap)
-export COMMITGEN_BASE_URL=https://api.groq.com/openai/v1
-export COMMITGEN_MODEL=llama-3.1-8b-instant
-export COMMITGEN_API_KEY=gsk_...
+```powershell
+# Windows PowerShell
+$env:COMMITGEN_BASE_URL = "https://api.openai.com/v1"
+$env:COMMITGEN_MODEL    = "gpt-4o-mini"
+$env:OPENAI_API_KEY     = "sk-..."
+```
+</details>
 
-# Anthropic
+<details>
+<summary><b>Example: Anthropic</b></summary>
+
+```bash
 export COMMITGEN_PROVIDER=anthropic
 export COMMITGEN_MODEL=claude-haiku-4-5
 export ANTHROPIC_API_KEY=sk-ant-...
 ```
-
-On Windows PowerShell, use `$env:COMMITGEN_MODEL = "gpt-4o-mini"`.
+</details>
 
 ## Configuration
 
-Run `commitgen config init` to create the user config (`commitgen config path` shows where it is).
-Put a `.commitgen.toml` in a repo root to override settings for that project:
+Create a starter config with:
+
+```bash
+commitgen config init     # writes the global config
+commitgen config path     # shows where it lives
+commitgen config show     # shows the effective settings
+```
+
+Add a `.commitgen.toml` to a repository root to set project rules:
 
 ```toml
-style  = "conventional"          # or "simple"
-scopes = ["api", "ui", "cli"]
-exclude = ["*.snap", "docs/generated/*"]
+style        = "conventional"
+scopes       = ["api", "ui", "cli"]
+exclude      = ["*.snap", "docs/generated/*"]
 instructions = "Reference the Jira ticket from the branch name, e.g. PROJ-123."
 ```
 
-Precedence: defaults → user config → repo `.commitgen.toml` → environment variables → flags.
+**Precedence:** defaults → global config → repo `.commitgen.toml` → environment variables → flags
+
+<details>
+<summary><b>All options</b></summary>
 
 | Key | Default | Description |
 |---|---|---|
@@ -115,21 +215,82 @@ Precedence: defaults → user config → repo `.commitgen.toml` → environment 
 | `max_diff` | `12000` | Max diff characters sent |
 | `history` | `10` | Recent commit subjects used for style matching |
 | `temperature` | `0.2` | Sampling temperature |
-| `timeout` | `120` | Request timeout (seconds) |
+| `timeout` | `120` | Request timeout in seconds |
 | `exclude` | — | Extra pathspecs to leave out of the diff |
 | `scopes` | — | Allowed Conventional Commit scopes |
 | `instructions` | — | Extra rules for the model |
+
+Environment variables: `COMMITGEN_PROVIDER`, `COMMITGEN_BASE_URL`, `COMMITGEN_MODEL`, `COMMITGEN_API_KEY`, `COMMITGEN_STYLE`, `COMMITGEN_LANGUAGE`, `COMMITGEN_CONFIG`.
+</details>
+
+## How it works
+
+```text
+git diff --cached  →  filter noise  →  mask secrets  →  build prompt  →  LLM  →  clean output  →  git commit
+```
+
+1. Reads your **staged** changes only. Nothing unstaged is ever sent.
+2. Drops lockfiles, minified assets, and build output, then trims oversized diffs.
+3. Redacts anything that looks like a secret.
+4. Adds the file summary, branch name, and recent commit subjects for context.
+5. Cleans the model's reply (strips code fences, quotes, and preambles) and hands it to `git commit`.
+
+## FAQ
+
+<details>
+<summary><b>Does my code leave my machine?</b></summary>
+
+Not with the default setup. commitgen talks to a local Ollama server. If you configure a cloud provider, the filtered and redacted diff is sent to that provider. Run `commitgen --dry-run` to see exactly what would be sent.
+</details>
+
+<details>
+<summary><b>Which local model should I use?</b></summary>
+
+`qwen2.5-coder:7b` is a good default. On machines with less memory, try `qwen2.5-coder:3b` or `llama3.2:3b`.
+</details>
+
+<details>
+<summary><b>"could not reach http://localhost:11434"</b></summary>
+
+Ollama isn't running. Start the Ollama app or run `ollama serve`.
+</details>
+
+<details>
+<summary><b>Will the git hook block my commits if something fails?</b></summary>
+
+No. If generation fails, the hook exits quietly and git continues as normal. It also skips merges, amends, and commits made with `-m`.
+</details>
 
 ## Development
 
 ```bash
 go test ./...
 go vet ./...
-make build        # or: go build -o commitgen .
+go build -o commitgen .
 ```
 
-Releases are built with [GoReleaser](https://goreleaser.com): `goreleaser release --snapshot --clean`.
+Project layout:
+
+```text
+.
+├── main.go              # CLI entry point and commands
+└── internal/
+    ├── config/          # config files and env vars
+    ├── git/             # git commands (diff, log, branch)
+    ├── llm/             # OpenAI-compatible and Anthropic clients
+    ├── prompt/          # prompt building and output cleanup
+    └── redact/          # secret masking
+```
+
+## Contributing
+
+Contributions are welcome.
+
+1. Fork the repo and create a branch: `git checkout -b feat/my-feature`
+2. Make your changes and add tests
+3. Run `go test ./...`
+4. Commit (with commitgen, of course) and open a pull request
 
 ## License
 
-MIT
+Released under the [MIT License](LICENSE).
