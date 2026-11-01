@@ -17,11 +17,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/angelito/commitgen/internal/config"
-	"github.com/angelito/commitgen/internal/git"
-	"github.com/angelito/commitgen/internal/llm"
-	"github.com/angelito/commitgen/internal/prompt"
-	"github.com/angelito/commitgen/internal/redact"
+	"github.com/onetwothird/commitgen/internal/config"
+	"github.com/onetwothird/commitgen/internal/git"
+	"github.com/onetwothird/commitgen/internal/llm"
+	"github.com/onetwothird/commitgen/internal/prompt"
+	"github.com/onetwothird/commitgen/internal/redact"
 )
 
 var version = "dev" // set with -ldflags "-X main.version=v1.0.0"
