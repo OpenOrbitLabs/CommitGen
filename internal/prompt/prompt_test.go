@@ -48,3 +48,36 @@ func TestSystemScopes(t *testing.T) {
 		t.Error("simple style should not mention Conventional Commits")
 	}
 }
+
+func TestValid(t *testing.T) {
+	good := []string{"feat(auth): add login", "fix: handle nil", "refactor(ui)!: drop old theme\n\n- x"}
+	bad := []string{"This appears to be a Git diff output", "Updated files", "feat add login", ""}
+	for _, m := range good {
+		if !Valid(m, "conventional") {
+			t.Errorf("expected valid: %q", m)
+		}
+	}
+	for _, m := range bad {
+		if Valid(m, "conventional") {
+			t.Errorf("expected invalid: %q", m)
+		}
+	}
+	if Valid("This change updates things", "simple") {
+		t.Error("prose should be invalid in simple style")
+	}
+}
+
+func TestCleanExtractsFromProse(t *testing.T) {
+	in := "Sure! Based on the diff, here is a message:\n\n**feat(ui): add dark mode toggle**\n- adds toggle\n```"
+	want := "feat(ui): add dark mode toggle\n\n- adds toggle"
+	if got := Clean(in); got != want {
+		t.Errorf("got %q want %q", got, want)
+	}
+}
+
+func TestUserEndsWithTask(t *testing.T) {
+	u := User(Input{Diff: "diff --git a/x b/x\n+1\n", Style: "conventional"})
+	if !strings.Contains(u[strings.LastIndex(u, "Staged diff"):], "Task: write the git commit message") {
+		t.Error("task instruction must come after the diff")
+	}
+}

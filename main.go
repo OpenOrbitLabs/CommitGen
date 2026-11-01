@@ -165,7 +165,7 @@ func generateCmd(f flags) error {
 
 	p, err := llm.New(llm.Options{
 		Provider: cfg.Provider, BaseURL: cfg.BaseURL, APIKey: cfg.APIKey,
-		Timeout: time.Duration(cfg.Timeout) * time.Second,
+		Timeout: time.Duration(cfg.Timeout) * time.Second, NumCtx: cfg.NumCtx,
 	})
 	if err != nil {
 		return err
@@ -177,7 +177,31 @@ func generateCmd(f flags) error {
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer cancel()
 
-	gen := func(n int) ([]string, error) { return generateN(ctx, p, req, n) }
+	gen := func(n int) ([]string, error) {
+		msgs, err := generateN(ctx, p, req, n)
+		if err != nil {
+			return nil, err
+		}
+		// Small models sometimes describe the diff instead of writing a
+		// commit message. Detect that and ask for a rewrite once.
+		for i, m := range msgs {
+			if prompt.Valid(m, cfg.Style) {
+				continue
+			}
+			if f.verbose {
+				fmt.Fprintf(os.Stderr, "commitgen: model reply was not a commit message, asking it to rewrite:\n%s\n", m)
+			}
+			fix := req
+			fix.User = prompt.RepairUser(m, stat, cfg.Style)
+			if fixed, err := generateN(ctx, p, fix, 1); err == nil && prompt.Valid(fixed[0], cfg.Style) {
+				msgs[i] = fixed[0]
+			} else {
+				fmt.Fprintln(os.Stderr, "commitgen: warning: the model's reply doesn't look like a commit message.\n"+
+					"  Tips: stage fewer files at a time, add context with -m \"...\", or try a larger model (--model).")
+			}
+		}
+		return msgs, nil
+	}
 
 	// Git hook mode: write the draft into the commit message file.
 	if f.hook != "" {

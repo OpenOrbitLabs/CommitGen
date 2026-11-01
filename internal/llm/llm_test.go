@@ -2,6 +2,7 @@ package llm
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -69,5 +70,40 @@ func TestHTTPErrorHint(t *testing.T) {
 	_, err := p.Generate(context.Background(), Request{}, nil)
 	if err == nil {
 		t.Fatal("expected error")
+	}
+}
+
+func TestOllamaNative(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/api/chat" {
+			t.Errorf("path = %s", r.URL.Path)
+		}
+		var body struct {
+			Options map[string]any `json:"options"`
+		}
+		json.NewDecoder(r.Body).Decode(&body)
+		if body.Options["num_ctx"].(float64) != 16384 {
+			t.Errorf("num_ctx = %v", body.Options["num_ctx"])
+		}
+		fmt.Fprintln(w, `{"message":{"content":"feat: "},"done":false}`)
+		fmt.Fprintln(w, `{"message":{"content":"add x"},"done":false}`)
+		fmt.Fprintln(w, `{"message":{"content":""},"done":true}`)
+	}))
+	defer srv.Close()
+	p, _ := New(Options{Provider: "ollama", BaseURL: srv.URL + "/v1", NumCtx: 16384, Timeout: 5 * time.Second})
+	got, err := p.Generate(context.Background(), Request{Model: "m"}, nil)
+	if err != nil || got != "feat: add x" {
+		t.Fatalf("got %q, %v", got, err)
+	}
+}
+
+func TestOllamaAutoDetect(t *testing.T) {
+	p, _ := New(Options{Provider: "openai", BaseURL: "http://localhost:11434/v1"})
+	if _, ok := p.(*ollama); !ok {
+		t.Errorf("expected native ollama provider, got %T", p)
+	}
+	p, _ = New(Options{Provider: "openai", BaseURL: "https://api.openai.com/v1"})
+	if _, ok := p.(*openAI); !ok {
+		t.Errorf("expected openai provider, got %T", p)
 	}
 }

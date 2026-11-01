@@ -216,6 +216,7 @@ instructions = "Reference the Jira ticket from the branch name, e.g. PROJ-123."
 | `history` | `10` | Recent commit subjects used for style matching |
 | `temperature` | `0.2` | Sampling temperature |
 | `timeout` | `120` | Request timeout in seconds |
+| `num_ctx` | `8192` | Ollama context window in tokens. Raise it for large diffs if you have the RAM |
 | `exclude` | — | Extra pathspecs to leave out of the diff |
 | `scopes` | — | Allowed Conventional Commit scopes |
 | `instructions` | — | Extra rules for the model |
@@ -233,7 +234,8 @@ git diff --cached  →  filter noise  →  mask secrets  →  build prompt  → 
 2. Drops lockfiles, minified assets, and build output, then trims oversized diffs.
 3. Redacts anything that looks like a secret.
 4. Adds the file summary, branch name, and recent commit subjects for context.
-5. Cleans the model's reply (strips code fences, quotes, and preambles) and hands it to `git commit`.
+5. Cleans the model's reply (strips code fences, quotes, and preambles). If the reply isn't a valid commit message, it asks the model to rewrite it.
+6. Hands the message to `git commit`.
 
 ## FAQ
 
@@ -247,6 +249,16 @@ Not with the default setup. commitgen talks to a local Ollama server. If you con
 <summary><b>Which local model should I use?</b></summary>
 
 `qwen2.5-coder:7b` is a good default. On machines with less memory, try `qwen2.5-coder:3b` or `llama3.2:3b`.
+</details>
+
+<details>
+<summary><b>The model describes my diff instead of writing a commit message</b></summary>
+
+This happens with small local models on large diffs. commitgen detects it and asks the model to rewrite its answer automatically. If it still happens:
+
+- Commit in smaller pieces (`git add` one feature at a time). That also gives you a cleaner history.
+- Add context: `commitgen -m "add accessibility settings"`
+- Use a larger model (`--model qwen2.5-coder:14b`) or raise `num_ctx` in your config.
 </details>
 
 <details>
