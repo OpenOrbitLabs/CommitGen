@@ -87,24 +87,67 @@ Restart your terminal afterwards.
 
 ## Quick Start
 
-**1. Get a local model** (one-time):
+New to commitgen? Follow these steps once and you're set.
+
+### 1. Install the requirements
+
+| Tool | Why | Get it |
+|---|---|---|
+| **Git** | commitgen reads your staged changes | [git-scm.com](https://git-scm.com/downloads) |
+| **Go 1.22+** | to install commitgen | [go.dev/dl](https://go.dev/dl/) |
+| **Ollama** | runs the AI model locally (skip if you use a cloud API) | [ollama.com/download](https://ollama.com/download) |
+
+Restart your terminal afterwards, then check:
+
+```bash
+git --version
+go version
+ollama --version
+```
+
+### 2. Install commitgen
+
+```bash
+go install github.com/onetwothird/commitgen@latest
+commitgen version
+```
+
+> **"commitgen is not recognized"?** Go installs programs to `~/go/bin` (Windows: `%USERPROFILE%\go\bin`). Add that folder to your `PATH` and restart your terminal.
+
+### 3. Download a model (one time, about 5 GB)
 
 ```bash
 ollama pull qwen2.5-coder:7b
 ```
 
-**2. Stage your changes and run:**
+Keep the Ollama app running in the background. On a low-memory machine, use `qwen2.5-coder:3b` and run commitgen with `--model qwen2.5-coder:3b`.
+
+### 4. Write your first commit message
+
+Inside any git repository:
 
 ```bash
 git add -A
 commitgen
 ```
 
-**3. Optional: let `git commit` do it for you:**
+commitgen shows a drafted message and asks what to do:
+
+| Key | Action |
+|---|---|
+| `Enter` or `c` | Commit with this message |
+| `e` | Open the message in your editor to tweak it, then commit |
+| `r` | Generate a new message |
+| `q` | Quit without committing |
+
+The first run can take 10–30 seconds while the model loads. Later runs are faster.
+
+### 5. Pick your workflow
 
 ```bash
-commitgen hook install
-git commit          # opens your editor with a drafted message
+commitgen -a --each      # commit every changed file separately, automatically
+commitgen -c -y          # generate and commit in one step, no questions
+commitgen hook install   # make plain `git commit` draft the message for you
 ```
 
 ## Usage
@@ -219,7 +262,7 @@ instructions = "Reference the Jira ticket from the branch name, e.g. PROJ-123."
 
 | Key | Default | Description |
 |---|---|---|
-| `provider` | `openai` | `openai` (any OpenAI-compatible API) or `anthropic` |
+| `provider` | `openai` | `openai` (any OpenAI-compatible API), `ollama`, or `anthropic`. Ollama on port 11434 is detected automatically |
 | `base_url` | `http://localhost:11434/v1` | API base URL |
 | `model` | `qwen2.5-coder:7b` | Model name |
 | `api_key` | — | Prefer env vars: `COMMITGEN_API_KEY`, `OPENAI_API_KEY`, `ANTHROPIC_API_KEY` |
@@ -302,7 +345,7 @@ Project layout:
 └── internal/
     ├── config/          # config files and env vars
     ├── git/             # git commands (diff, log, branch)
-    ├── llm/             # OpenAI-compatible and Anthropic clients
+    ├── llm/             # Ollama, OpenAI-compatible and Anthropic clients
     ├── prompt/          # prompt building and output cleanup
     └── redact/          # secret masking
 ```
