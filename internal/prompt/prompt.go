@@ -1,4 +1,3 @@
-// Package prompt builds the LLM prompt and cleans up the model's answer.
 package prompt
 
 import (
@@ -16,7 +15,7 @@ type Input struct {
 	Language     string
 	Scopes       []string
 	Instructions string
-	Hint         string // user-provided context via -m / --hint
+	Hint         string 
 	MaxDiff      int
 }
 
@@ -68,8 +67,6 @@ func User(in Input) string {
 		diff = Truncate(diff, in.MaxDiff)
 	}
 	fmt.Fprintf(&b, "Staged diff:\n%s\n", diff)
-	// Repeat the task after the diff: small local models weight the end of the
-	// prompt most, and otherwise tend to *describe* the diff instead.
 	b.WriteString("\n---\nTask: write the git commit message for the staged changes above.\n")
 	if in.Style == "simple" {
 		b.WriteString("Reply with ONLY the commit message: a short imperative summary line, optionally followed by a blank line and bullet points.\n")
@@ -79,8 +76,6 @@ func User(in Input) string {
 	return b.String()
 }
 
-// RepairUser asks the model to turn a bad answer (e.g. a prose description of
-// the diff) into a proper commit message.
 func RepairUser(bad, stat string, style string) string {
 	format := "`type(scope): summary` (Conventional Commits)"
 	if style == "simple" {
@@ -94,7 +89,6 @@ func RepairUser(bad, stat string, style string) string {
 
 var conventionalRe = regexp.MustCompile(`^(feat|fix|refactor|perf|docs|test|build|ci|chore|style|revert)(\([^)\n]+\))?!?: \S`)
 
-// Valid reports whether msg looks like a usable commit message for the style.
 func Valid(msg, style string) bool {
 	subj, _, _ := strings.Cut(strings.TrimSpace(msg), "\n")
 	if subj == "" || len(subj) > 100 {
@@ -107,8 +101,6 @@ func Valid(msg, style string) bool {
 	return conventionalRe.MatchString(subj)
 }
 
-// extractConventional finds a conventional subject line buried inside prose
-// and returns the message starting from it.
 func extractConventional(s string) string {
 	lines := strings.Split(s, "\n")
 	for i, l := range lines {
@@ -121,8 +113,6 @@ func extractConventional(s string) string {
 	return s
 }
 
-// Truncate shortens a diff while keeping every file header, so the model still
-// sees which files changed even when their hunks are cut.
 func Truncate(diff string, max int) string {
 	files := strings.Split(diff, "\ndiff --git ")
 	if len(files) == 0 {
@@ -138,7 +128,6 @@ func Truncate(diff string, max int) string {
 	var b strings.Builder
 	for _, f := range files {
 		if b.Len() >= max {
-			// Keep just the header line for the remaining files.
 			line, _, _ := strings.Cut(f, "\n")
 			b.WriteString(line + "\n[... hunks omitted ...]\n")
 			continue
@@ -165,7 +154,6 @@ var (
 	prefixRe = regexp.MustCompile(`(?i)^(here('s| is) (the|a|your) commit message:?|commit message:)\s*`)
 )
 
-// Clean strips reasoning tags, code fences, preambles and surrounding quotes.
 func Clean(s string) string {
 	s = thinkRe.ReplaceAllString(s, "")
 	s = strings.TrimSpace(s)
@@ -178,18 +166,15 @@ func Clean(s string) string {
 	if len(s) >= 2 && (s[0] == '"' && s[len(s)-1] == '"' || s[0] == '\'' && s[len(s)-1] == '\'') {
 		s = s[1 : len(s)-1]
 	}
-	// Normalise line endings and trailing whitespace.
 	lines := strings.Split(strings.ReplaceAll(s, "\r\n", "\n"), "\n")
 	for i, l := range lines {
 		lines[i] = strings.TrimRight(l, " \t")
 	}
 	s = strings.TrimSpace(strings.Join(lines, "\n"))
-	// If the model wrapped the message in prose, pull out the real message.
 	if subj, _, _ := strings.Cut(s, "\n"); !conventionalRe.MatchString(subj) {
 		s = extractConventional(s)
 		s = strings.TrimSpace(strings.TrimSuffix(strings.TrimSpace(s), "```"))
 	}
-	// Ensure a blank line between subject and body.
 	if subj, body, ok := strings.Cut(s, "\n"); ok && !strings.HasPrefix(body, "\n") {
 		s = subj + "\n\n" + strings.TrimLeft(body, "\n")
 	}
