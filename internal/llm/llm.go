@@ -95,9 +95,7 @@ func (p *openAI) Generate(ctx context.Context, r Request, on OnToken) (string, e
 			{"role": "user", "content": r.User},
 		},
 	}
-	// Reasoning models (e.g. gpt-oss) spend hidden "thinking" tokens out of
-	// max_tokens; with a small budget they return an empty message. Keep the
-	// reasoning short and leave room for the actual answer.
+
 	if strings.Contains(strings.ToLower(r.Model), "gpt-oss") {
 		payload["reasoning_effort"] = "low"
 		if r.MaxTokens < 2048 {
