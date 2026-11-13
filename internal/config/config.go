@@ -269,7 +269,7 @@ model    = "qwen2.5-coder:7b"
 
 # Cloud examples:
 # base_url = "https://api.openai.com/v1"      # model = "gpt-4o-mini", key from OPENAI_API_KEY
-# base_url = "https://api.groq.com/openai/v1" # model = "llama-3.1-8b-instant"
+# base_url = "https://api.groq.com/openai/v1" # model = "openai/gpt-oss-20b"
 # provider = "anthropic"                      # model = "claude-haiku-4-5", key from ANTHROPIC_API_KEY
 
 style       = "conventional"   # or "simple"
