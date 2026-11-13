@@ -1,4 +1,3 @@
-// Package git wraps the few git commands commitgen needs.
 package git
 
 import (
