@@ -169,14 +169,14 @@ Keep the Ollama app running in the background. No further setup is needed: commi
    ```bash
    # macOS / Linux (add to ~/.bashrc or ~/.zshrc to keep it)
    export COMMITGEN_BASE_URL=https://api.groq.com/openai/v1
-   export COMMITGEN_MODEL=llama-3.1-8b-instant
+   export COMMITGEN_MODEL=openai/gpt-oss-20b
    export COMMITGEN_API_KEY=gsk_your_key_here
    ```
 
    ```powershell
    # Windows (permanent; restart your terminal afterwards)
    setx COMMITGEN_BASE_URL "https://api.groq.com/openai/v1"
-   setx COMMITGEN_MODEL "llama-3.1-8b-instant"
+   setx COMMITGEN_MODEL "openai/gpt-oss-20b"
    setx COMMITGEN_API_KEY "gsk_your_key_here"
    ```
 
@@ -269,7 +269,7 @@ CommitGen talks to any **OpenAI-compatible** endpoint, plus Anthropic's native A
 | Ollama *(default)* | `http://localhost:11434/v1` | `qwen2.5-coder:7b` | — |
 | LM Studio | `http://localhost:1234/v1` | *(loaded model)* | — |
 | OpenAI | `https://api.openai.com/v1` | `gpt-4o-mini` | `OPENAI_API_KEY` |
-| Groq | `https://api.groq.com/openai/v1` | `llama-3.1-8b-instant` | `CommitGen` |
+| Groq | `https://api.groq.com/openai/v1` | `openai/gpt-oss-20b` | `CommitGen` |
 | OpenRouter | `https://openrouter.ai/api/v1` | `meta-llama/llama-3.1-8b-instruct` | `COMMITGEN_API_KEY` |
 | Anthropic | *(set `provider = "anthropic"`)* | `claude-haiku-4-5` | `ANTHROPIC_API_KEY` |
 
