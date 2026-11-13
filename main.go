@@ -15,11 +15,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/onetwothird/commitgen/internal/config"
-	"github.com/onetwothird/commitgen/internal/git"
-	"github.com/onetwothird/commitgen/internal/llm"
-	"github.com/onetwothird/commitgen/internal/prompt"
-	"github.com/onetwothird/commitgen/internal/redact"
+	"github.com/onetwothird/CommitGen/internal/config"
+	"github.com/onetwothird/CommitGen/internal/git"
+	"github.com/onetwothird/CommitGen/internal/llm"
+	"github.com/onetwothird/CommitGen/internal/prompt"
+	"github.com/onetwothird/CommitGen/internal/redact"
 )
 
 var version = "dev" 

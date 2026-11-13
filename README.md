@@ -5,8 +5,8 @@
 **AI-written commit messages from your staged diff. Local-first, private, and fast.**
 
 [![Go Version](https://img.shields.io/github/go-mod/go-version/onetwothird/CommitGen?style=flat-square)](go.mod)
-[![Latest Tag](https://img.shields.io/github/v/tag/onetwothird/CommitGen?style=flat-square&label=version)](https://github.com/onetwothird/commitgen/tags)
-[![Go Report Card](https://goreportcard.com/badge/github.com/onetwothird/CommitGen?style=flat-square)](https://goreportcard.com/report/github.com/onetwothird/commitgen)
+[![Latest Tag](https://img.shields.io/github/v/tag/onetwothird/CommitGen?style=flat-square&label=version)](https://github.com/onetwothird/CommitGen/tags)
+[![Go Report Card](https://goreportcard.com/badge/github.com/onetwothird/CommitGen?style=flat-square)](https://goreportcard.com/report/github.com/onetwothird/CommitGen)
 [![Go Reference](https://pkg.go.dev/badge/github.com/onetwothird/CommitGen.svg)](https://pkg.go.dev/github.com/onetwothird/CommitGen)
 [![License: MIT](https://img.shields.io/github/license/onetwothird/CommitGen?style=flat-square)](LICENSE)
 
