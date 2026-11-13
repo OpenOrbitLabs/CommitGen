@@ -85,7 +85,7 @@ type openAI struct {
 }
 
 func (p *openAI) Generate(ctx context.Context, r Request, on OnToken) (string, error) {
-	body, _ := json.Marshal(map[string]any{
+	payload := map[string]any{
 		"model":       r.Model,
 		"temperature": r.Temperature,
 		"max_tokens":  r.MaxTokens,
@@ -94,7 +94,17 @@ func (p *openAI) Generate(ctx context.Context, r Request, on OnToken) (string, e
 			{"role": "system", "content": r.System},
 			{"role": "user", "content": r.User},
 		},
-	})
+	}
+	// Reasoning models (e.g. gpt-oss) spend hidden "thinking" tokens out of
+	// max_tokens; with a small budget they return an empty message. Keep the
+	// reasoning short and leave room for the actual answer.
+	if strings.Contains(strings.ToLower(r.Model), "gpt-oss") {
+		payload["reasoning_effort"] = "low"
+		if r.MaxTokens < 2048 {
+			payload["max_tokens"] = 2048
+		}
+	}
+	body, _ := json.Marshal(payload)
 	req, _ := http.NewRequestWithContext(ctx, "POST", p.base+"/chat/completions", bytes.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
 	if p.key != "" {
