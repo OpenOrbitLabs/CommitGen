@@ -1,14 +1,14 @@
 <div align="center">
 
-# commitgen
+# CommitGen
 
 **AI-written commit messages from your staged diff. Local-first, private, and fast.**
 
-[![Go Version](https://img.shields.io/github/go-mod/go-version/onetwothird/commitgen?style=flat-square)](go.mod)
-[![Latest Tag](https://img.shields.io/github/v/tag/onetwothird/commitgen?style=flat-square&label=version)](https://github.com/onetwothird/commitgen/tags)
-[![Go Report Card](https://goreportcard.com/badge/github.com/onetwothird/commitgen?style=flat-square)](https://goreportcard.com/report/github.com/onetwothird/commitgen)
-[![Go Reference](https://pkg.go.dev/badge/github.com/onetwothird/commitgen.svg)](https://pkg.go.dev/github.com/onetwothird/commitgen)
-[![License: MIT](https://img.shields.io/github/license/onetwothird/commitgen?style=flat-square)](LICENSE)
+[![Go Version](https://img.shields.io/github/go-mod/go-version/onetwothird/CommitGen?style=flat-square)](go.mod)
+[![Latest Tag](https://img.shields.io/github/v/tag/onetwothird/CommitGen?style=flat-square&label=version)](https://github.com/onetwothird/commitgen/tags)
+[![Go Report Card](https://goreportcard.com/badge/github.com/onetwothird/CommitGen?style=flat-square)](https://goreportcard.com/report/github.com/onetwothird/commitgen)
+[![Go Reference](https://pkg.go.dev/badge/github.com/onetwothird/CommitGen.svg)](https://pkg.go.dev/github.com/onetwothird/CommitGen)
+[![License: MIT](https://img.shields.io/github/license/onetwothird/CommitGen?style=flat-square)](LICENSE)
 
 [Features](#features) •
 [Installation](#installation) •
@@ -24,7 +24,7 @@
 
 ```console
 $ git add .
-$ commitgen
+$ CommitGen
 
   feat(auth): add refresh token rotation
 
@@ -34,7 +34,7 @@ $ commitgen
 [c]ommit  [e]dit  [r]egenerate  [q]uit (c):
 ```
 
-## Why commitgen?
+## Why CommitGen?
 
 You commit many times a day, so writing good messages shouldn't slow you down or send your code to someone else's server.
 
@@ -51,35 +51,35 @@ You commit many times a day, so writing good messages shouldn't slow you down or
 | 🛡️ **Secret masking** | API keys, tokens, passwords, and private keys are redacted before anything is sent. |
 | 🧠 **Smart diffs** | Skips lockfiles, minified files, and build output. Big diffs are trimmed while keeping every file header. |
 | 🎯 **Style matching** | Learns from your recent commits and branch name to match your repo's conventions. |
-| 🪝 **Git hook** | `commitgen hook install`, then plain `git commit` opens with a drafted message. |
-| 📦 **One commit per file** | `commitgen -a --each` commits every changed file separately, each with its own message. |
+| 🪝 **Git hook** | `CommitGen hook install`, then plain `git commit` opens with a drafted message. |
+| 📦 **One commit per file** | `CommitGen -a --each` commits every changed file separately, each with its own message. |
 | 🎲 **Multiple candidates** | `-n 3` generates three options to pick from. |
-| ⚙️ **Configurable** | Global config plus per-repo `.commitgen.toml` for scopes, style, language, and custom rules. |
+| ⚙️ **Configurable** | Global config plus per-repo `.CommitGen.toml` for scopes, style, language, and custom rules. |
 
 ## Installation
 
 ### With Go (1.22+)
 
 ```bash
-go install github.com/onetwothird/commitgen@latest
+go install github.com/onetwothird/CommitGen@latest
 ```
 
 ### From source
 
 ```bash
-git clone https://github.com/onetwothird/commitgen.git
-cd commitgen
-go build -o commitgen .         # Windows: go build -o commitgen.exe .
+git clone https://github.com/onetwothird/CommitGen.git
+cd CommitGen
+go build -o CommitGen .         # Windows: go build -o CommitGen.exe .
 ```
 
 Move the binary to a directory on your `PATH`.
 
 <details>
-<summary><b>Adding commitgen to PATH on Windows</b></summary>
+<summary><b>Adding CommitGen to PATH on Windows</b></summary>
 
 ```powershell
 $p = [Environment]::GetEnvironmentVariable("Path", "User")
-[Environment]::SetEnvironmentVariable("Path", "$p;C:\path\to\commitgen", "User")
+[Environment]::SetEnvironmentVariable("Path", "$p;C:\path\to\CommitGen", "User")
 ```
 
 Restart your terminal afterwards.
@@ -87,14 +87,20 @@ Restart your terminal afterwards.
 
 ## Quick Start
 
-New to commitgen? Follow these steps once and you're set.
+New to CommitGen? Follow these steps once and you're set.
 
 ### 1. Install the requirements
 
 | Tool | Why | Get it |
 |---|---|---|
+<<<<<<< HEAD
 | **Git** | commitgen reads your staged changes | [git-scm.com](https://git-scm.com/downloads) |
 | **Go 1.22+** | to install commitgen | [go.dev/dl](https://go.dev/dl/) |
+=======
+| **Git** | CommitGen reads your staged changes | [git-scm.com](https://git-scm.com/downloads) |
+| **Go 1.22+** | to install CommitGen | [go.dev/dl](https://go.dev/dl/) |
+| **Ollama** | runs the AI model locally (skip if you use a cloud API) | [ollama.com/download](https://ollama.com/download) |
+>>>>>>> 863efd0b9a26f57a8974e668bb35a9a3bf50d145
 
 Restart your terminal afterwards, then check:
 
@@ -103,21 +109,26 @@ git --version
 go version
 ```
 
+<<<<<<< HEAD
 You also need an AI model to write the messages. You'll choose one in step 3. It can run on your machine (free, private) or in the cloud (nothing to install).
 
 ### 2. Install commitgen
+=======
+### 2. Install CommitGen
+>>>>>>> 863efd0b9a26f57a8974e668bb35a9a3bf50d145
 
 ```bash
-go install github.com/onetwothird/commitgen@latest
-commitgen version
+go install github.com/onetwothird/CommitGen@latest
+CommitGen version
 ```
 
-> **"commitgen is not recognized"?** Go installs programs to `~/go/bin` (Windows: `%USERPROFILE%\go\bin`). Add that folder to your `PATH` and restart your terminal.
+> **"CommitGen is not recognized"?** Go installs programs to `~/go/bin` (Windows: `%USERPROFILE%\go\bin`). Add that folder to your `PATH` and restart your terminal.
 
 ### 3. Choose where the AI runs
 
 Pick **one** option. Not sure? Use **A** if your computer has 8 GB+ of RAM. Otherwise use **B**.
 
+<<<<<<< HEAD
 | | A. Local (Ollama) | B. Cloud (Groq, free tier) |
 |---|---|---|
 | **Cost** | Free | Free tier, no card needed |
@@ -172,6 +183,9 @@ Keep the Ollama app running in the background. No further setup is needed: commi
 You can put these settings in a config file instead: run `commitgen config init`, then edit the file at the path that `commitgen config path` prints. You can also use OpenAI, Anthropic, OpenRouter, or LM Studio. See [Providers](#providers).
 
 Check your setup any time with `commitgen config show`.
+=======
+Keep the Ollama app running in the background. On a low-memory machine, use `qwen2.5-coder:3b` and run CommitGen with `--model qwen2.5-coder:3b`.
+>>>>>>> 863efd0b9a26f57a8974e668bb35a9a3bf50d145
 
 ### 4. Write your first commit message
 
@@ -179,10 +193,10 @@ Inside any git repository:
 
 ```bash
 git add -A
-commitgen
+CommitGen
 ```
 
-commitgen shows a drafted message and asks what to do:
+CommitGen shows a drafted message and asks what to do:
 
 | Key | Action |
 |---|---|
@@ -196,18 +210,18 @@ The first run can take 10–30 seconds while the model loads. Later runs are fas
 ### 5. Pick your workflow
 
 ```bash
-commitgen -a --each      # commit every changed file separately, automatically
-commitgen -c -y          # generate and commit in one step, no questions
-commitgen hook install   # make plain `git commit` draft the message for you
+CommitGen -a --each      # commit every changed file separately, automatically
+CommitGen -c -y          # generate and commit in one step, no questions
+CommitGen hook install   # make plain `git commit` draft the message for you
 ```
 
 ## Usage
 
 ```text
-commitgen [flags]
-commitgen hook install | uninstall
-commitgen config init | path | show
-commitgen version
+CommitGen [flags]
+CommitGen hook install | uninstall
+CommitGen config init | path | show
+CommitGen version
 ```
 
 | Flag | Description |
@@ -232,30 +246,30 @@ commitgen version
 ### One commit per file
 
 ```bash
-commitgen -a --each        # stage everything, then commit file by file
-commitgen --each           # only the files you already staged
-commitgen -a --each -p     # preview the messages without committing
+CommitGen -a --each        # stage everything, then commit file by file
+CommitGen --each           # only the files you already staged
+CommitGen -a --each -p     # preview the messages without committing
 ```
 
-commitgen commits exactly what you staged, including partially staged files. Unstaged changes are left alone. If a step fails, it stops and leaves the remaining files staged.
+CommitGen commits exactly what you staged, including partially staged files. Unstaged changes are left alone. If a step fails, it stops and leaves the remaining files staged.
 
 **Tip:** add a git alias:
 
 ```bash
-git config --global alias.ai '!commitgen -c'
+git config --global alias.ai '!CommitGen -c'
 git ai
 ```
 
 ## Providers
 
-commitgen talks to any **OpenAI-compatible** endpoint, plus Anthropic's native API.
+CommitGen talks to any **OpenAI-compatible** endpoint, plus Anthropic's native API.
 
 | Provider | `base_url` | Example model | API key env var |
 |---|---|---|---|
 | Ollama *(default)* | `http://localhost:11434/v1` | `qwen2.5-coder:7b` | — |
 | LM Studio | `http://localhost:1234/v1` | *(loaded model)* | — |
 | OpenAI | `https://api.openai.com/v1` | `gpt-4o-mini` | `OPENAI_API_KEY` |
-| Groq | `https://api.groq.com/openai/v1` | `llama-3.1-8b-instant` | `COMMITGEN_API_KEY` |
+| Groq | `https://api.groq.com/openai/v1` | `llama-3.1-8b-instant` | `CommitGen` |
 | OpenRouter | `https://openrouter.ai/api/v1` | `meta-llama/llama-3.1-8b-instruct` | `COMMITGEN_API_KEY` |
 | Anthropic | *(set `provider = "anthropic"`)* | `claude-haiku-4-5` | `ANTHROPIC_API_KEY` |
 
@@ -292,12 +306,12 @@ export ANTHROPIC_API_KEY=sk-ant-...
 Create a starter config with:
 
 ```bash
-commitgen config init     # writes the global config
-commitgen config path     # shows where it lives
-commitgen config show     # shows the effective settings
+CommitGen config init     # writes the global config
+CommitGen config path     # shows where it lives
+CommitGen config show     # shows the effective settings
 ```
 
-Add a `.commitgen.toml` to a repository root to set project rules:
+Add a `.CommitGen.toml` to a repository root to set project rules:
 
 ```toml
 style        = "conventional"
@@ -306,7 +320,7 @@ exclude      = ["*.snap", "docs/generated/*"]
 instructions = "Reference the Jira ticket from the branch name, e.g. PROJ-123."
 ```
 
-**Precedence:** defaults → global config → repo `.commitgen.toml` → environment variables → flags
+**Precedence:** defaults → global config → repo `.CommitGen.toml` → environment variables → flags
 
 <details>
 <summary><b>All options</b></summary>
@@ -349,7 +363,7 @@ git diff --cached  →  filter noise  →  mask secrets  →  build prompt  → 
 <details>
 <summary><b>Does my code leave my machine?</b></summary>
 
-Not with the default setup. commitgen talks to a local Ollama server. If you configure a cloud provider, the filtered and redacted diff is sent to that provider. Run `commitgen --dry-run` to see exactly what would be sent.
+Not with the default setup. CommitGen talks to a local Ollama server. If you configure a cloud provider, the filtered and redacted diff is sent to that provider. Run `CommitGen --dry-run` to see exactly what would be sent.
 </details>
 
 <details>
@@ -361,10 +375,10 @@ Not with the default setup. commitgen talks to a local Ollama server. If you con
 <details>
 <summary><b>The model describes my diff instead of writing a commit message</b></summary>
 
-This happens with small local models on large diffs. commitgen detects it and asks the model to rewrite its answer automatically. If it still happens:
+This happens with small local models on large diffs. CommitGen detects it and asks the model to rewrite its answer automatically. If it still happens:
 
 - Commit in smaller pieces (`git add` one feature at a time). That also gives you a cleaner history.
-- Add context: `commitgen -m "add accessibility settings"`
+- Add context: `CommitGen -m "add accessibility settings"`
 - Use a larger model (`--model qwen2.5-coder:14b`) or raise `num_ctx` in your config.
 </details>
 
@@ -385,7 +399,7 @@ No. If generation fails, the hook exits quietly and git continues as normal. It 
 ```bash
 go test ./...
 go vet ./...
-go build -o commitgen .
+go build -o CommitGen .
 ```
 
 Project layout:
@@ -408,7 +422,7 @@ Contributions are welcome.
 1. Fork the repo and create a branch: `git checkout -b feat/my-feature`
 2. Make your changes and add tests
 3. Run `go test ./...`
-4. Commit (with commitgen, of course) and open a pull request
+4. Commit (with CommitGen, of course) and open a pull request
 
 ## License
 
