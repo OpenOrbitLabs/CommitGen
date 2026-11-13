@@ -95,15 +95,15 @@ New to commitgen? Follow these steps once and you're set.
 |---|---|---|
 | **Git** | commitgen reads your staged changes | [git-scm.com](https://git-scm.com/downloads) |
 | **Go 1.22+** | to install commitgen | [go.dev/dl](https://go.dev/dl/) |
-| **Ollama** | runs the AI model locally (skip if you use a cloud API) | [ollama.com/download](https://ollama.com/download) |
 
 Restart your terminal afterwards, then check:
 
 ```bash
 git --version
 go version
-ollama --version
 ```
+
+You also need an AI model to write the messages. You'll choose one in step 3. It can run on your machine (free, private) or in the cloud (nothing to install).
 
 ### 2. Install commitgen
 
@@ -114,13 +114,64 @@ commitgen version
 
 > **"commitgen is not recognized"?** Go installs programs to `~/go/bin` (Windows: `%USERPROFILE%\go\bin`). Add that folder to your `PATH` and restart your terminal.
 
-### 3. Download a model (one time, about 5 GB)
+### 3. Choose where the AI runs
 
-```bash
-ollama pull qwen2.5-coder:7b
-```
+Pick **one** option. Not sure? Use **A** if your computer has 8 GB+ of RAM. Otherwise use **B**.
 
-Keep the Ollama app running in the background. On a low-memory machine, use `qwen2.5-coder:3b` and run commitgen with `--model qwen2.5-coder:3b`.
+| | A. Local (Ollama) | B. Cloud (Groq, free tier) |
+|---|---|---|
+| **Cost** | Free | Free tier, no card needed |
+| **Privacy** | Code never leaves your machine | Diff is sent to Groq (secrets are masked first) |
+| **Setup** | Install Ollama + 2–5 GB download | Create an API key (about 1 minute) |
+| **Works offline** | Yes | No |
+| **Best for** | Most developers, company code | Low-end laptops, no-install setups, CI |
+
+#### Option A: Local with Ollama (default, recommended)
+
+1. Install Ollama from [ollama.com/download](https://ollama.com/download). On Windows you can also run `winget install Ollama.Ollama`. On macOS, `brew install ollama`.
+2. Download a model (one time):
+
+   ```bash
+   ollama pull qwen2.5-coder:7b     # 16 GB RAM or a GPU (about 5 GB)
+   ollama pull qwen2.5-coder:3b     # 8 GB RAM or older laptops (about 2 GB)
+   ```
+
+3. If you pulled the 3b model, make it your default:
+
+   ```bash
+   # macOS / Linux (add to ~/.bashrc or ~/.zshrc to keep it)
+   export COMMITGEN_MODEL=qwen2.5-coder:3b
+   ```
+
+   ```powershell
+   # Windows (permanent; restart your terminal afterwards)
+   setx COMMITGEN_MODEL "qwen2.5-coder:3b"
+   ```
+
+Keep the Ollama app running in the background. No further setup is needed: commitgen talks to Ollama by default.
+
+#### Option B: Cloud with Groq (no install)
+
+1. Create a free API key at [console.groq.com/keys](https://console.groq.com/keys).
+2. Point commitgen at Groq:
+
+   ```bash
+   # macOS / Linux (add to ~/.bashrc or ~/.zshrc to keep it)
+   export COMMITGEN_BASE_URL=https://api.groq.com/openai/v1
+   export COMMITGEN_MODEL=llama-3.1-8b-instant
+   export COMMITGEN_API_KEY=gsk_your_key_here
+   ```
+
+   ```powershell
+   # Windows (permanent; restart your terminal afterwards)
+   setx COMMITGEN_BASE_URL "https://api.groq.com/openai/v1"
+   setx COMMITGEN_MODEL "llama-3.1-8b-instant"
+   setx COMMITGEN_API_KEY "gsk_your_key_here"
+   ```
+
+You can put these settings in a config file instead: run `commitgen config init`, then edit the file at the path that `commitgen config path` prints. You can also use OpenAI, Anthropic, OpenRouter, or LM Studio. See [Providers](#providers).
+
+Check your setup any time with `commitgen config show`.
 
 ### 4. Write your first commit message
 
