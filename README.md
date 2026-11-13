@@ -155,7 +155,7 @@ Pick **one** option. Not sure? Use **A** if your computer has 8 GB+ of RAM. Othe
    ```
 
    ```powershell
-   # Windows (permanent; restart your terminal afterwards)
+   # Windows (permanent; only applies to terminals opened afterwards, so close and reopen yours)
    setx COMMITGEN_MODEL "qwen2.5-coder:3b"
    ```
 
@@ -174,11 +174,23 @@ Keep the Ollama app running in the background. No further setup is needed: commi
    ```
 
    ```powershell
-   # Windows (permanent; restart your terminal afterwards)
+   # Windows (permanent)
    setx COMMITGEN_BASE_URL "https://api.groq.com/openai/v1"
    setx COMMITGEN_MODEL "openai/gpt-oss-20b"
    setx COMMITGEN_API_KEY "gsk_your_key_here"
    ```
+
+3. **Windows: close the terminal and open a new one.** `setx` saves the settings for terminals opened *after* it runs. The window where you ran it does not get them. **In VS Code's built-in terminal, a new terminal tab is not enough: quit VS Code completely and reopen it.** If you run commitgen there, it falls back to the local Ollama default and fails with `could not reach http://localhost:11434`. You can also skip the restart by setting the values for the current window:
+
+   ```powershell
+   $env:COMMITGEN_BASE_URL = "https://api.groq.com/openai/v1"
+   $env:COMMITGEN_MODEL    = "openai/gpt-oss-20b"
+   $env:COMMITGEN_API_KEY  = "gsk_your_key_here"
+   ```
+
+4. Confirm commitgen picked them up: `commitgen config show` should list the Groq URL and model, not `localhost:11434`.
+
+> **Keep your key secret.** Never paste your real `gsk_...` key into issues, chats, screenshots, or commits. If it leaks, delete it at [console.groq.com/keys](https://console.groq.com/keys) and create a new one.
 
 You can put these settings in a config file instead: run `commitgen config init`, then edit the file at the path that `commitgen config path` prints. You can also use OpenAI, Anthropic, OpenRouter, or LM Studio. See [Providers](#providers).
 
@@ -269,7 +281,7 @@ CommitGen talks to any **OpenAI-compatible** endpoint, plus Anthropic's native A
 | Ollama *(default)* | `http://localhost:11434/v1` | `qwen2.5-coder:7b` | — |
 | LM Studio | `http://localhost:1234/v1` | *(loaded model)* | — |
 | OpenAI | `https://api.openai.com/v1` | `gpt-4o-mini` | `OPENAI_API_KEY` |
-| Groq | `https://api.groq.com/openai/v1` | `openai/gpt-oss-20b` | `CommitGen` |
+| Groq | `https://api.groq.com/openai/v1` | `openai/gpt-oss-20b` | `COMMITGEN_API_KEY` |
 | OpenRouter | `https://openrouter.ai/api/v1` | `meta-llama/llama-3.1-8b-instruct` | `COMMITGEN_API_KEY` |
 | Anthropic | *(set `provider = "anthropic"`)* | `claude-haiku-4-5` | `ANTHROPIC_API_KEY` |
 
@@ -385,7 +397,10 @@ This happens with small local models on large diffs. CommitGen detects it and as
 <details>
 <summary><b>"could not reach http://localhost:11434"</b></summary>
 
-Ollama isn't running. Start the Ollama app or run `ollama serve`.
+CommitGen is using the local Ollama default. Either:
+
+- **You want Ollama:** Ollama isn't running. Start the Ollama app or run `ollama serve`.
+- **You set up Groq or another cloud provider:** your settings haven't reached this terminal. On Windows, `setx` only affects terminals opened *after* you ran it. Close the terminal, open a new one, and run `commitgen config show` to confirm the base URL is no longer `localhost:11434`. Your staged files remain staged, so you can rerun CommitGen right away.
 </details>
 
 <details>
